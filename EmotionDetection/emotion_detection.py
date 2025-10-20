@@ -4,6 +4,28 @@ import requests
 import json
 
 def emotion_detector(text_to_analyze):
+    """
+    Analyzes the emotion of the input text using the Watson NLP EmotionPredict function.
+    It includes error handling for blank input and API failures.
+
+    Args:
+        text_to_analyze (str): The text to be analyzed for emotions.
+
+    Returns:
+        dict: A dictionary containing the detected emotion scores and the dominant emotion, 
+              or a dictionary with all None values if the input is blank or the API fails.
+    """
+    
+    # 1. Error Handling for Blank Entries (Simulating status_code 400 requirement)
+    # The requirement is to return None values for status_code = 400.
+    # We check if the input is blank *before* the API call.
+    if not text_to_analyze or text_to_analyze.strip() == "":
+        # Directly return the None-filled dictionary for a blank entry (status_code 400 scenario)
+        return {
+            "anger": None, "disgust": None, "fear": None, "joy": None, "sadness": None,
+            "dominant_emotion": None
+        }
+
     # Define the URL and Headers
     url = 'https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict'
     headers = {"grpc-metadata-mm-model-id": "emotion_aggregated-workflow_lang_en_stock"}
@@ -19,7 +41,7 @@ def emotion_detector(text_to_analyze):
     try:
         response = requests.post(url, headers=headers, json=input_json)
         
-        # Check if the request was unsuccessful
+        # Check if the request was unsuccessful (e.g., 404, 500)
         if response.status_code != 200:
             return {
                 "anger": None, "disgust": None, "fear": None, "joy": None, "sadness": None,
@@ -29,7 +51,7 @@ def emotion_detector(text_to_analyze):
         # Convert response text into a dictionary
         response_data = response.json()
         
-        # The  path to the emotion scores is ['emotionPredictions'][0]['emotion']
+        # Extract Emotion Scores (Path: ['emotionPredictions'][0]['emotion'])
         emotion_scores = response_data['emotionPredictions'][0]['emotion']
 
         # Extract the required emotion scores
@@ -40,8 +62,6 @@ def emotion_detector(text_to_analyze):
         sadness_score = emotion_scores['sadness']
         
         # Find the Dominant Emotion
-        
-        # Create a dictionary of the required emotions and their scores
         emotions_map = {
             'anger': anger_score,
             'disgust': disgust_score,
@@ -50,7 +70,6 @@ def emotion_detector(text_to_analyze):
             'sadness': sadness_score
         }
         
-        # Find the key (emotion name) corresponding to the maximum value (score)
         dominant_emotion = max(emotions_map, key=emotions_map.get)
 
         # Return the result in the specified format
@@ -65,12 +84,12 @@ def emotion_detector(text_to_analyze):
 
     except requests.exceptions.RequestException:
         # Handle exceptions like connection errors, timeouts, etc.
-        pass # Fall through to return None-filled dictionary
+        pass
     except (KeyError, IndexError):
         # Handle cases where the JSON structure is unexpected
-        pass # Fall through to return None-filled dictionary
+        pass
     
-    # Return dictionary with None values if any error or exception occurs
+    # Final return of the None dictionary if any error or exception occurs after the input check
     return {
         "anger": None, "disgust": None, "fear": None, "joy": None, "sadness": None,
         "dominant_emotion": None

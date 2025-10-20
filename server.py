@@ -1,51 +1,51 @@
 # server.py
+"""Flask server for the Emotion Detection application."""
 
 from flask import Flask, render_template, request
-from EmotionDetection.emotion_detection import emotion_detector 
 
-app = Flask(__name__)
+# The import path assumes the structure EmotionDetection/emotion_detection.py
+from EmotionDetection.emotion_detection import emotion_detector
 
-@app.route("/")
+APP = Flask(__name__)
+
+@APP.route("/")
 def render_index_page():
-    """
-    Renders the main page (index.html) of the application.
-    """
+    """Renders the main HTML page (index.html) for the application."""
     return render_template('index.html')
 
-@app.route("/emotionDetector")
+@APP.route("/emotionDetector")
 def emotion_detector_route():
     """
     Handles the request for emotion detection.
+
+    Retrieves text from the query parameters, calls the emotion_detector, 
+    and returns a formatted output string or an error message.
     """
-    # 1. Get the text to analyze from the URL query parameter 'textToAnalyze'
+    # Use snake_case for local variable names
     text_to_analyze = request.args.get('textToAnalyze')
-    
-    # Check if the input text is empty or None
-    if not text_to_analyze:
-        return "Invalid input. Please provide text to analyze.", 400
 
-    # 2. Call the emotion detection function
-    response = emotion_detector(text_to_analyze)
+    # The emotion_detector handles blank input by returning a dictionary
+    # where 'dominant_emotion' is None.
+    response_data = emotion_detector(text_to_analyze)
 
-    # Check for errors returned by emotion_detector (e.g., connection failure or None values)
-    if response['dominant_emotion'] is None:
-        # A specific error handling message based on the dominant_emotion being None
-        return f"Error: Could not process the statement or received an unexpected response.", 503
+    # Error Handling: Check for None from blank input or API failure.
+    if response_data['dominant_emotion'] is None:
+        # Returns the error message with a 400 Bad Request status code.
+        return "Invalid text! Please try again!", 400
 
-    # 3. Format the output string as requested
-    
+    # Format the successful output string using HTML <b> tags for bolding.
     output_message = (
         f"For the given statement, the system response is "
-        f"'anger': {response['anger']}, "
-        f"'disgust': {response['disgust']}, "
-        f"'fear': {response['fear']}, "
-        f"'joy': {response['joy']}, "
-        f"and 'sadness': {response['sadness']}. "
-        f"The dominant emotion is **{response['dominant_emotion']}**."
+        f"'anger': {response_data['anger']}, "
+        f"'disgust': {response_data['disgust']}, "
+        f"'fear': {response_data['fear']}, "
+        f"'joy': {response_data['joy']}, "
+        f"and 'sadness': {response_data['sadness']}. "
+        f"The dominant emotion is <b>{response_data['dominant_emotion']}</b>."
     )
 
     return output_message
 
 if __name__ == "__main__":
-    # Deploy the application on localhost:5000 as requested The debug=True setting is helpful during development
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Deploy the application on localhost:5000 as requested
+    APP.run(host="0.0.0.0", port=5000, debug=True)
